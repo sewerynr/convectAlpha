@@ -1,7 +1,7 @@
 #include <stdlib.h>
 #include "localFunctions.h"
 
-dimensionedScalar SMALL_NUMBER3("small", dimless, SMALL);
+dimensionedScalar SMALL_NUMBER3("small", dimless, 0.001);
 
 void InitPsiXYZ(volScalarField& PsiZero, const fvMesh& mesh, scalar (*funIntP)(const double x,const double y, const double z) )
 {
@@ -177,7 +177,7 @@ void AlphaToPsi(const volScalarField& T, volScalarField& Psi, const double& eps,
 //    minPsi = -1.e+12;
 
 //    if(abs(Psi) < 26*epsH)
-     Psi == epsH*Foam::log((T+eps)/(1-T+eps));
+     Psi == epsH*Foam::log((T+SMALL_NUMBER3)/(1-T+SMALL_NUMBER3));
 
 //     forAll(Psi.mesh().boundary(), patchi)  // mesh.boundary() daje liste adresow do war. brzeg.
 //     {

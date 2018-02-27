@@ -113,8 +113,8 @@ void exRK3(const volScalarField& C, Time& runTime, const fvMesh& mesh, dimension
         limitT(k1, mesh);
         AlphaToPsi(k1, Psi, eps, epsH);
 
-        updatemsnGradPsi(mesh, Psi, msnGradPsi);
         updatemGradPsi(mesh, Psi, mGradPsi);
+        updatemsnGradPsi(mesh, Psi, msnGradPsi);
         LimitGradPsi(mesh, Psi, mGradPsi, 1./ilePkt, gradPsiLimit, PsiZero);
         LimitsnGradPsi(mesh, Psi, msnGradPsi, 1.0/ilePkt, gradPsiLimit, PsiZero, runTime);
 
@@ -172,6 +172,7 @@ void exRK3(const volScalarField& C, Time& runTime, const fvMesh& mesh, dimension
 //        fC << i << " " << norm1 << " " << norm2 << " " << norm3 << " " << norm1gr << " " << norm2gr << " " << norm3gr << " " << norm1lap <<  " " << norm2lap << " " << norm3lap << " " << norm1c <<std::endl;
         runTime.write();
 //        ++runTime;
+
     }
 
     double dx = 1.0/ilePkt;
