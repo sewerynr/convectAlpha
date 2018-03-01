@@ -1,7 +1,7 @@
 #include <stdlib.h>
 #include "localFunctions.h"
 
-dimensionedScalar SMALL_NUMBER3("small", dimless, SMALL/0.01);
+dimensionedScalar SMALL_NUMBER3("small", dimless, 1e-15);
 
 void InitPsiXYZ(volScalarField& PsiZero, const fvMesh& mesh, scalar (*funIntP)(const double x,const double y, const double z) )
 {
@@ -173,15 +173,17 @@ void fileOpener(FILE** f, string outpath)
 
 void AlphaToPsi2(const volScalarField& T, volScalarField& Psi, const double& eps, const dimensionedScalar& epsH, const fvMesh& mesh )
 {
+    double small = 10.;
+    double mult = 1.;
      forAll(T, CellId)
      {
-         if(T[CellId] > SMALL_NUMBER3.value() && T[CellId] < (1.0 - SMALL_NUMBER3.value()  ) )
+         if(T[CellId] > SMALL_NUMBER3.value()*small && T[CellId] < (1.0 - SMALL_NUMBER3.value()*small  ) )
          {
             Psi[CellId] = epsH.value()*Foam::log((T[CellId])/(1.0 - T[CellId]));
          }
          else
          {
-            Psi[CellId] = epsH.value()*Foam::log((T[CellId]+SMALL_NUMBER3.value())/(1.0 - T[CellId] + SMALL_NUMBER3.value()));
+            Psi[CellId] = epsH.value()*Foam::log((T[CellId]+SMALL_NUMBER3.value()*mult)/(1.0 - T[CellId] + SMALL_NUMBER3.value()*mult));
          }
      }
      forAll(mesh.boundary(), patchi)
@@ -191,13 +193,47 @@ void AlphaToPsi2(const volScalarField& T, volScalarField& Psi, const double& eps
          const fvPatchScalarField& TPatch = T.boundaryField()[patchi];
          forAll(patch, faceId)                       // lopp over faces centers belonging to a given patch
          {
-             if(TPatch[faceId] > SMALL_NUMBER3.value()  && TPatch[faceId] < (1.0 - SMALL_NUMBER3.value() ) )
+             if(TPatch[faceId] > SMALL_NUMBER3.value()*small  && TPatch[faceId] < (1.0 - SMALL_NUMBER3.value()*small ) )
              {
                  PsiPatch[faceId] = epsH.value()*Foam::log((TPatch[faceId])/(1.0 - TPatch[faceId]));
              }
              else
              {
-                 PsiPatch[faceId] = epsH.value()*Foam::log((TPatch[faceId]+SMALL_NUMBER3.value())/(1.0 - TPatch[faceId] + SMALL_NUMBER3.value()));
+                 PsiPatch[faceId] = epsH.value()*Foam::log((TPatch[faceId]+SMALL_NUMBER3.value()*mult)/(1.0 - TPatch[faceId] + SMALL_NUMBER3.value()*mult));
+             }
+         }
+     }
+}
+
+void AlphaToPsi3(const volScalarField& T, volScalarField& Psi, const double& eps, const dimensionedScalar& epsH)
+{
+    double small = 10.;
+    double mult = 1.;
+     forAll(T, CellId)
+     {
+         if(T[CellId] > SMALL_NUMBER3.value()*small && T[CellId] < (1.0 - SMALL_NUMBER3.value()*small  ) )
+         {
+            Psi[CellId] = epsH.value()*( Foam::log(T[CellId]) - Foam::log(1.0 - T[CellId])) ;
+         }
+         else
+         {
+            Psi[CellId] = epsH.value()*( Foam::log(T[CellId] +SMALL_NUMBER3.value()*mult) - Foam::log(1.0 - T[CellId] +SMALL_NUMBER3.value()*mult)) ;
+         }
+     }
+     forAll(T.mesh().boundary(), patchi)
+     {
+         const fvPatch& patch = T.mesh().boundary()[patchi];
+         fvPatchScalarField& PsiPatch = Psi.boundaryField()[patchi];
+         const fvPatchScalarField& TPatch = T.boundaryField()[patchi];
+         forAll(patch, faceId)                       // lopp over faces centers belonging to a given patch
+         {
+             if(TPatch[faceId] > SMALL_NUMBER3.value()*small  && TPatch[faceId] < (1.0 - SMALL_NUMBER3.value()*small ) )
+             {
+                 PsiPatch[faceId] = epsH.value()*( Foam::log(TPatch[faceId]) - Foam::log(1.0 - TPatch[faceId]));
+             }
+             else
+             {
+                 PsiPatch[faceId] = epsH.value()*( Foam::log(TPatch[faceId]+SMALL_NUMBER3.value()*mult) - Foam::log(1.0 - TPatch[faceId]+SMALL_NUMBER3.value()*mult));
              }
          }
      }
@@ -205,23 +241,9 @@ void AlphaToPsi2(const volScalarField& T, volScalarField& Psi, const double& eps
 
 void AlphaToPsi(const volScalarField& T, volScalarField& Psi, const double& eps, const dimensionedScalar& epsH)
 {
-//    maxPsi = 1.e+12;
-//    minPsi = -1.e+12;
 //    if(abs(Psi) < 26*epsH)
 
-     Psi == epsH*Foam::log((T+SMALL_NUMBER3/1.)/(1.0 - T + SMALL_NUMBER3/1.));
-
-//     forAll(Psi.mesh().boundary(), patchi)  // mesh.boundary() daje liste adresow do war. brzeg.
-//     {
-//         const fvPatch& patch = Psi.mesh().boundary()[patchi];
-//         fvPatchScalarField& psiPatch = Psi.boundaryField()[patchi];
-//         const fvPatchScalarField& TPatch = T.boundaryField()[patchi];
-
-//         forAll(patch, faceId) // petla po centrach objetosci danego patcha
-//         {
-//             psiPatch[faceId] = epsH.value()*Foam::log((TPatch[faceId]+eps)/(1-TPatch[faceId]+eps));
-//         }
-//     }
+    Psi == epsH*Foam::log((T + SMALL_NUMBER3)/(1.0 - T + SMALL_NUMBER3));
 
 //     maxPsi = max(Psi,maxPsi);
 //     minPsi = min(Psi,minPsi);

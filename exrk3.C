@@ -57,7 +57,6 @@ void exRK3(const volScalarField& C, Time& runTime, const fvMesh& mesh, dimension
 //    LaplaceAnalit = - ( Foam::tanh(PsiZero/(2.0*epsH)) - Foam::tanh(PsiZero/(2.0*epsH))*Foam::tanh(PsiZero/(2.0*epsH))*Foam::tanh(PsiZero/(2.0*epsH)) )/(4.0*epsH*epsH);
 
     updatemsnGradPsi(mesh, Psi, msnGradPsi);
-
     updatemGradPsi(mesh, Psi, mGradPsi);
 
     LimitGradPsi(mesh, Psi, mGradPsi, 1.0/ilePkt, gradPsiLimit, PsiZero);
@@ -111,8 +110,9 @@ void exRK3(const volScalarField& C, Time& runTime, const fvMesh& mesh, dimension
         k1 == T + fvc::div(phiR)*dtau;
 
         limitT(k1, mesh);
+//        AlphaToPsi(k1, Psi, eps, epsH);
 //        AlphaToPsi2(k1, Psi, eps, epsH, mesh);
-        AlphaToPsi(k1, Psi, eps, epsH);
+        AlphaToPsi3(k1, Psi, eps, epsH);
 
         updatemGradPsi(mesh, Psi, mGradPsi);
         updatemsnGradPsi(mesh, Psi, msnGradPsi);
@@ -125,8 +125,10 @@ void exRK3(const volScalarField& C, Time& runTime, const fvMesh& mesh, dimension
         k2 == 3.0/4.0* T + 1.0/4.0* k1 + 1.0/4.0* fvc::div(phiR)*dtau;
 
         limitT(k2, mesh);
-        AlphaToPsi(k2, Psi, eps, epsH);
+//        AlphaToPsi(k1, Psi, eps, epsH);
 //        AlphaToPsi2(k1, Psi, eps, epsH, mesh);
+        AlphaToPsi3(k2, Psi, eps, epsH);
+
 
         updatemsnGradPsi(mesh, Psi, msnGradPsi);
         updatemGradPsi(mesh, Psi, mGradPsi);
@@ -140,8 +142,9 @@ void exRK3(const volScalarField& C, Time& runTime, const fvMesh& mesh, dimension
         T ==  100.0/300.0* Told + 200.0/300.0* k2 + 200.0/300.0*fvc::div(phiR)*dtau;
 
         limitT(T, mesh);
-        AlphaToPsi(T, Psi, eps, epsH);
+//        AlphaToPsi(k1, Psi, eps, epsH);
 //        AlphaToPsi2(k1, Psi, eps, epsH, mesh);
+        AlphaToPsi3(T, Psi, eps, epsH);
 
         updatemsnGradPsi(mesh, Psi, msnGradPsi);
         updatemGradPsi(mesh, Psi, mGradPsi);
@@ -174,8 +177,7 @@ void exRK3(const volScalarField& C, Time& runTime, const fvMesh& mesh, dimension
 //        fC << i << " " << norm1 << " " << norm2 << " " << norm3 << " " << norm1gr << " " << norm2gr << " " << norm3gr << " " << norm1lap <<  " " << norm2lap << " " << norm3lap << " " << norm1c <<std::endl;
         runTime.write();
 //        ++runTime;
-
-    }
+}
 
     double dx = 1.0/ilePkt;
     double norm1_grad_pkt = 0.0;

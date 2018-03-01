@@ -26,6 +26,8 @@ void AlphaToPsi(const volScalarField& T, volScalarField& Psi, const double& eps,
 
 void AlphaToPsi2(const volScalarField& T, volScalarField& Psi, const double& eps, const dimensionedScalar& epsH, const fvMesh& mesh );
 
+void AlphaToPsi3(const volScalarField& T, volScalarField& Psi, const double& eps, const dimensionedScalar& epsH);
+
 void InitUXYZ( volVectorField& U, const fvMesh& mesh, vector (*funInitV) ( const double x, const double y, const double z) );
 
 void PsiAlphaFace(const volScalarField& T,const volScalarField& Psi, const double& eps, const dimensionedScalar& epsH, const Time& runTime, const fvMesh& mesh,
