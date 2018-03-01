@@ -1,7 +1,7 @@
 #include <stdlib.h>
 #include "localFunctions.h"
 
-dimensionedScalar SMALL_NUMBER3("small", dimless, 0.001);
+dimensionedScalar SMALL_NUMBER3("small", dimless, SMALL/0.01);
 
 void InitPsiXYZ(volScalarField& PsiZero, const fvMesh& mesh, scalar (*funIntP)(const double x,const double y, const double z) )
 {
@@ -101,7 +101,7 @@ surfaceScalarField createPhiFieldEx(const Time& runTime, const fvMesh& mesh, con
               IOobject::NO_READ,
               IOobject::NO_WRITE
           ),
-          linearInterpolate( T*(scalar(1.) - T)*(mag(fvc::grad(Psi))- scalar(1.) ) /( mag(fvc::grad(Psi)) + SMALL_NUMBER ) ) *  fvc::snGrad(Psi) * mesh.magSf()
+          linearInterpolate( T*(scalar(1.0) - T)*(mag(fvc::grad(Psi))- scalar(1.0) ) /( mag(fvc::grad(Psi)) + SMALL_NUMBER ) ) *  fvc::snGrad(Psi) * mesh.magSf()
         );
     return phiR;
 }
@@ -171,13 +171,45 @@ void fileOpener(FILE** f, string outpath)
        }
 }
 
+void AlphaToPsi2(const volScalarField& T, volScalarField& Psi, const double& eps, const dimensionedScalar& epsH, const fvMesh& mesh )
+{
+     forAll(T, CellId)
+     {
+         if(T[CellId] > SMALL_NUMBER3.value() && T[CellId] < (1.0 - SMALL_NUMBER3.value()  ) )
+         {
+            Psi[CellId] = epsH.value()*Foam::log((T[CellId])/(1.0 - T[CellId]));
+         }
+         else
+         {
+            Psi[CellId] = epsH.value()*Foam::log((T[CellId]+SMALL_NUMBER3.value())/(1.0 - T[CellId] + SMALL_NUMBER3.value()));
+         }
+     }
+     forAll(mesh.boundary(), patchi)
+     {
+         const fvPatch& patch = mesh.boundary()[patchi];
+         fvPatchScalarField& PsiPatch = Psi.boundaryField()[patchi];
+         const fvPatchScalarField& TPatch = T.boundaryField()[patchi];
+         forAll(patch, faceId)                       // lopp over faces centers belonging to a given patch
+         {
+             if(TPatch[faceId] > SMALL_NUMBER3.value()  && TPatch[faceId] < (1.0 - SMALL_NUMBER3.value() ) )
+             {
+                 PsiPatch[faceId] = epsH.value()*Foam::log((TPatch[faceId])/(1.0 - TPatch[faceId]));
+             }
+             else
+             {
+                 PsiPatch[faceId] = epsH.value()*Foam::log((TPatch[faceId]+SMALL_NUMBER3.value())/(1.0 - TPatch[faceId] + SMALL_NUMBER3.value()));
+             }
+         }
+     }
+}
+
 void AlphaToPsi(const volScalarField& T, volScalarField& Psi, const double& eps, const dimensionedScalar& epsH)
 {
 //    maxPsi = 1.e+12;
 //    minPsi = -1.e+12;
-
 //    if(abs(Psi) < 26*epsH)
-     Psi == epsH*Foam::log((T+SMALL_NUMBER3)/(1-T+SMALL_NUMBER3));
+
+     Psi == epsH*Foam::log((T+SMALL_NUMBER3/1.)/(1.0 - T + SMALL_NUMBER3/1.));
 
 //     forAll(Psi.mesh().boundary(), patchi)  // mesh.boundary() daje liste adresow do war. brzeg.
 //     {
@@ -223,7 +255,7 @@ surfaceScalarField createSurfKField(string nazwa, const Time& runTime, const fvM
             IOobject::NO_WRITE
         ),
         mesh,
-        dimensionedScalar(nazwa, dimless, scalar(0))
+        dimensionedScalar(nazwa, dimless, scalar(0.))
     );
     return ks;
 }
@@ -247,6 +279,27 @@ void updatemsnGradPsi(const fvMesh& mesh, const volScalarField & Psi, surfaceSca
         forAll(patch, faceId)                       // lopp over faces centers belonging to a given patch
         {
             if(gradPsiPatch[faceId] < SMALL_NUMBER3.value())
+            {
+                gradPsiPatch[faceId] = scalar(1.0);
+            }
+        }
+    }
+
+    forAll(msngradPsi, faceId)
+    {
+        if(msngradPsi[faceId] > scalar(1.0))
+        {
+            msngradPsi[faceId] = scalar(1.0) ;
+        }
+    }
+
+    forAll(mesh.boundary(), patchi)
+    {
+        const fvPatch& patch = mesh.boundary()[patchi];
+        fvsPatchScalarField& gradPsiPatch = msngradPsi.boundaryField()[patchi];
+        forAll(patch, faceId)                       // lopp over faces centers belonging to a given patch
+        {
+            if(gradPsiPatch[faceId] > scalar(1.0))
             {
                 gradPsiPatch[faceId] = scalar(1.0);
             }
@@ -276,15 +329,35 @@ void updatemGradPsi(const fvMesh& mesh, const volScalarField & Psi, volScalarFie
             }
         }
     }
+
+    forAll(mGradPsi, CellId)
+    {
+        if(mGradPsi[CellId] > scalar(1.0))
+        {
+            mGradPsi[CellId] = scalar(1.0);
+        }
+    }
+    forAll(mesh.boundary(), patchi)
+    {
+        const fvPatch& patch = mesh.boundary()[patchi];
+        fvPatchScalarField& gradPsiPatch = mGradPsi.boundaryField()[patchi];
+        forAll(patch, faceId)                       // lopp over faces centers belonging to a given patch
+        {
+            if(gradPsiPatch[faceId] > scalar(1.0))
+            {
+                gradPsiPatch[faceId] = scalar(1.0);
+            }
+        }
+    }
 }
 
 void LimitGradPsi(const fvMesh& mesh, const volScalarField & Psi, volScalarField & gradPsi, double dx, const double gradPsiLimit, const volScalarField & PsiZero)
 {
     forAll( mesh.cellCentres(), cellId)
     {
-        if( mag(PsiZero[cellId]) > gradPsiLimit*dx )
+        if( mag(Psi[cellId]) > gradPsiLimit*dx )
         {
-            gradPsi[cellId] = 1.0;
+            gradPsi[cellId] = scalar(1.0);
         }
     }
 
@@ -293,12 +366,13 @@ void LimitGradPsi(const fvMesh& mesh, const volScalarField & Psi, volScalarField
         const fvPatch& patch = mesh.boundary()[patchi];
         fvPatchScalarField& gradPsiPatch = gradPsi.boundaryField()[patchi];
         const fvPatchScalarField& PsiZeroPatch = PsiZero.boundaryField()[patchi];
+        const fvPatchScalarField& PsiPatch = Psi.boundaryField()[patchi];
 
         forAll(patch, faceId) // petla po centrach objetosci danego patcha
         {
-            if ( mag(PsiZeroPatch[faceId]) > gradPsiLimit*dx )
+            if ( mag(PsiPatch[faceId]) > gradPsiLimit*dx )
             {
-                gradPsiPatch[faceId] = 1.0;
+                gradPsiPatch[faceId] = scalar(1.0);
             }
         }
     }
@@ -318,9 +392,22 @@ void LimitsnGradPsi(const fvMesh& mesh, const volScalarField & Psi, surfaceScala
         linearInterpolate(PsiZero)
     );
 
+    surfaceScalarField sPsi
+    (
+        IOobject
+        (
+            "sPsiZero",
+            runTime.timeName(),
+            mesh,
+            IOobject::NO_READ,
+            IOobject::NO_WRITE
+        ),
+        linearInterpolate(Psi)
+    );
+
     forAll(sPsiZero, faceId)
     {
-        if( mag(sPsiZero[faceId]) > gradPsiLimit*dx )
+        if( mag(sPsi[faceId]) > gradPsiLimit*dx )
         {
             msngradPsi[faceId] = scalar(1.0) ;
         }
@@ -331,13 +418,14 @@ void LimitsnGradPsi(const fvMesh& mesh, const volScalarField & Psi, surfaceScala
     {
         const fvPatch& patch = mesh.boundary()[patchi];
         fvsPatchScalarField& msngradPsiPatch = msngradPsi.boundaryField()[patchi];
-      //  const fvPatchScalarField& PsiZeroPatch = PsiZero.boundaryField()[patchi];
+        const fvPatchScalarField& PsiPatch = Psi.boundaryField()[patchi];
 
         forAll(patch, faceId) // petla po centrach objetosci danego patcha
         {
-            if ( mag(patch.Cf()[faceId].x()) > gradPsiLimit*dx )
+//            if ( mag(patch.Cf()[faceId].x()) > gradPsiLimit*dx )
+            if ( mag(PsiPatch[faceId]) > gradPsiLimit*dx )
             {
-                msngradPsiPatch[faceId] = 1.0;
+                msngradPsiPatch[faceId] = scalar(1.0) ;
             }
         }
     }

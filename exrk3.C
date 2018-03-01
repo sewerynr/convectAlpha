@@ -111,6 +111,7 @@ void exRK3(const volScalarField& C, Time& runTime, const fvMesh& mesh, dimension
         k1 == T + fvc::div(phiR)*dtau;
 
         limitT(k1, mesh);
+//        AlphaToPsi2(k1, Psi, eps, epsH, mesh);
         AlphaToPsi(k1, Psi, eps, epsH);
 
         updatemGradPsi(mesh, Psi, mGradPsi);
@@ -125,6 +126,7 @@ void exRK3(const volScalarField& C, Time& runTime, const fvMesh& mesh, dimension
 
         limitT(k2, mesh);
         AlphaToPsi(k2, Psi, eps, epsH);
+//        AlphaToPsi2(k1, Psi, eps, epsH, mesh);
 
         updatemsnGradPsi(mesh, Psi, msnGradPsi);
         updatemGradPsi(mesh, Psi, mGradPsi);
@@ -139,12 +141,12 @@ void exRK3(const volScalarField& C, Time& runTime, const fvMesh& mesh, dimension
 
         limitT(T, mesh);
         AlphaToPsi(T, Psi, eps, epsH);
+//        AlphaToPsi2(k1, Psi, eps, epsH, mesh);
 
         updatemsnGradPsi(mesh, Psi, msnGradPsi);
         updatemGradPsi(mesh, Psi, mGradPsi);
         LimitGradPsi(mesh, Psi, mGradPsi, 1./ilePkt, gradPsiLimit, PsiZero);
         LimitsnGradPsi(mesh, Psi, msnGradPsi, 1.0/ilePkt, gradPsiLimit, PsiZero, runTime);
-
 
         double norm1c = Foam::sum(Foam::mag(T-Told)).value() / T.size();
         Info << "Norma conv = " << norm1c << endl;
