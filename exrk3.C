@@ -45,8 +45,8 @@ void exRK3(const volScalarField& C, Time& runTime, const fvMesh& mesh, dimension
     #include "createfieldsexrk3.H"
 
     magGradT = mag(fvc::grad(T));
-    msnGradPsi == mag(fvc::snGrad(Psi));
-    mGradPsi = mag(fvc::grad(Psi));
+ //   msnGradPsi == mag(fvc::snGrad(Psi));
+  //  mGradPsi = mag(fvc::grad(Psi));
 //    surfgradT = linearInterpolate( T*(1.0-T)*(fvc::grad(Psi))/epsH ) & mesh.Sf();
 
 //    GradTW = T*(1.0-T)*mag(fvc::grad(Psi))/epsH;
@@ -62,9 +62,6 @@ void exRK3(const volScalarField& C, Time& runTime, const fvMesh& mesh, dimension
 
     LimitGradPsi(mesh, Psi, mGradPsi, 1.0/ilePkt, gradPsiLimit, PsiZero);
     LimitsnGradPsi(mesh, Psi, msnGradPsi, 1.0/ilePkt, gradPsiLimit, PsiZero, runTime);
-
-    phiR = linearInterpolate( C*T*( scalar(1.0) - T ) * (fvc::grad(Psi) / ( mGradPsi )) ) & mesh.Sf();
-    phiR == phiR * ( msnGradPsi - scalar(1.0) );
 
 // !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! SAVE VALUES t = t0 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     forAll(mesh.cellCentres(), cellI )
@@ -107,6 +104,9 @@ void exRK3(const volScalarField& C, Time& runTime, const fvMesh& mesh, dimension
         Info<<"reinitialization iter "<< i << endl;
 
         Told == T; // == means copy with b.c.
+
+        phiR = linearInterpolate( C*T*( scalar(1.0) - T ) * (fvc::grad(Psi) / ( mGradPsi )) ) & mesh.Sf();
+        phiR == phiR * ( msnGradPsi - scalar(1.0) );
 
         k1 == T + fvc::div(phiR)*dtau;
 
