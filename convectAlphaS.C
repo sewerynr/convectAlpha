@@ -28,9 +28,9 @@ int main(int argc, char *argv[])
 //#include "CourantNo.H"
 #include "settings.h"
 
-    dimensionedScalar epsH( "epsH", dimLength, Foam::pow(Foam::average(mesh.cellVolumes()), one/3.0) / parEpsH);
-    Info << "DX=" << epsH.value() << endl;
-    Info << "Ntau=" << Ntau << endl;
+    dimensionedScalar dx( "dx", dimLength, Foam::pow(Foam::average(mesh.cellVolumes()), one/3.0));
+    dimensionedScalar epsH( "epsH", dimLength, dx.value() / parEpsH);
+    Info << "Ntau= " << Ntau << endl;
     epsH = epsH*Foam::sqrt(pDim);
 
 //  dimensionedScalar dtau( "dTau", explicitSolver ? dimLength : dimLength/dimTime , epsH.value() / pardatu );
@@ -44,7 +44,7 @@ int main(int argc, char *argv[])
 
     Info << endl << "current runTime=" << runTime.value() << endl;
     T.write();
-    Info << "dx   =  "      << Foam::pow(Foam::average(mesh.cellVolumes()), one/3.0) << endl;
+    Info << "dx   =  "      << dx.value() << endl;
     Info << "epsH =  "      << epsH.value() << endl;
     Info << "dtau =  "      << dtau.value() << endl;
     Info << "ilosc Pkt =  " << ilePkt << endl << endl;

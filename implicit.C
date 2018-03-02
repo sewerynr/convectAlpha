@@ -31,7 +31,7 @@ void implicit(const volScalarField& C, Time& runTime, const fvMesh& mesh, dimens
         TEqn.solve();
 
         if (limitFieldT)
-            limitT(T,mesh);
+            limitT(T);
 
         double norm1 = 0.;
         ++runTime;

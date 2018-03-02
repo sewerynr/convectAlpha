@@ -23,7 +23,7 @@ void exEuler(const volScalarField& C, Time& runTime, const fvMesh& mesh, dimensi
         Told == T;
 
         if (limitFieldT)
-            limitT(T,mesh);
+            limitT(T);
 
         Psi = epsH*Foam::log((T+eps)/(1-T+eps)) ;
         phiR = linearInterpolate( C*T*( scalar(1.) - T )*( mag(fvc::grad(Psi))- scalar(1.) ) * (fvc::grad(PsiZero) /( mag(fvc::grad(PsiZero)) + SMALL_NUMBER ))  )  & mesh.Sf();

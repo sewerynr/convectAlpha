@@ -8,6 +8,7 @@ void InitPsiXYZ(volScalarField& PsiZero, const fvMesh& mesh, scalar (*funIntP)(c
     forAll(mesh.cellCentres(),cellI) // loop over cell centers
     {
         PsiZero[cellI] = funIntP( mesh.cellCentres()[cellI].x(),mesh.cellCentres()[cellI].y(),mesh.cellCentres()[cellI].z() );
+
     }
 
     forAll(mesh.boundary(), patchi)  // loop over all boundary patches
@@ -70,19 +71,35 @@ void InitUXYZ( volVectorField& U, const fvMesh& mesh, vector (*funInitV) (const 
     U.correctBoundaryConditions();
 }
 
-void limitT(volScalarField& T, const fvMesh& mesh)
+void limitT(volScalarField& T)
 {
     T = Foam::min(Foam::max(T, scalar(0.) ), scalar(1.) );
-//    forAll(mesh.boundary(), patchi)
+//    forAll(T.mesh().boundary(), patchi)
 //    {
-//        const fvPatch& patch = mesh.boundary()[patchi];
+//        const fvPatch& patch = T.mesh().boundary()[patchi];
 //        fvPatchScalarField& TPatch = T.boundaryField()[patchi];
 //        forAll(patch, faceId)                       // lopp over faces centers belonging to a given patch
 //        {
-//            if(TPatch[faceId] > 0.9999999999999)
+//            if(TPatch[faceId] > 1.0)
 //            {
 //                TPatch[faceId] = scalar(1.0);
 //            }
+//            else if(TPatch[faceId] < 0.0)
+//            {
+//                TPatch[faceId] = scalar(0.0);
+//            }
+//        }
+//    }
+
+//    forAll(T, celli)
+//    {
+//        if(T[celli] > 1.0)
+//        {
+//            T[celli] = scalar(1.0);
+//        }
+//        else if( T[celli] < 0.0)
+//        {
+//             T[celli] = scalar(0.0);
 //        }
 //    }
 }
@@ -106,7 +123,6 @@ surfaceScalarField createPhiFieldEx(const Time& runTime, const fvMesh& mesh, con
     return phiR;
 }
 
-
 surfaceScalarField createPhiFieldExC(const volScalarField& C, const Time& runTime, const fvMesh& mesh, const volScalarField& T, const volScalarField& Psi )
 {
     surfaceScalarField phiR  // cv surface!
@@ -123,7 +139,6 @@ surfaceScalarField createPhiFieldExC(const volScalarField& C, const Time& runTim
         );
     return phiR;
 }
-
 
 surfaceScalarField createPhiFieldImp(const volScalarField& C, const Time& runTime, const fvMesh& mesh, const volScalarField& T, const volScalarField& PsiZero, const volScalarField& Psi )
 {
@@ -207,7 +222,7 @@ void AlphaToPsi2(const volScalarField& T, volScalarField& Psi, const double& eps
 
 void AlphaToPsi3(const volScalarField& T, volScalarField& Psi, const double& eps, const dimensionedScalar& epsH)
 {
-    double small = 10.;
+    double small = 1.;
     double mult = 1.;
      forAll(T, CellId)
      {
@@ -283,7 +298,7 @@ surfaceScalarField createSurfKField(string nazwa, const Time& runTime, const fvM
 }
 
 // EXRK3
-void updatemsnGradPsi(const fvMesh& mesh, const volScalarField & Psi, surfaceScalarField & msngradPsi)
+void updatemsnGradPsi(const volScalarField & Psi, surfaceScalarField & msngradPsi)
 {
     msngradPsi == mag(fvc::snGrad(Psi));
     forAll(msngradPsi, faceId)
@@ -294,9 +309,9 @@ void updatemsnGradPsi(const fvMesh& mesh, const volScalarField & Psi, surfaceSca
         }
     }
 
-    forAll(mesh.boundary(), patchi)
+    forAll(Psi.mesh().boundary(), patchi)
     {
-        const fvPatch& patch = mesh.boundary()[patchi];
+        const fvPatch& patch = Psi.mesh().boundary()[patchi];
         fvsPatchScalarField& gradPsiPatch = msngradPsi.boundaryField()[patchi];
         forAll(patch, faceId)                       // lopp over faces centers belonging to a given patch
         {
@@ -315,9 +330,9 @@ void updatemsnGradPsi(const fvMesh& mesh, const volScalarField & Psi, surfaceSca
         }
     }
 
-    forAll(mesh.boundary(), patchi)
+    forAll(Psi.mesh().boundary(), patchi)
     {
-        const fvPatch& patch = mesh.boundary()[patchi];
+        const fvPatch& patch = Psi.mesh().boundary()[patchi];
         fvsPatchScalarField& gradPsiPatch = msngradPsi.boundaryField()[patchi];
         forAll(patch, faceId)                       // lopp over faces centers belonging to a given patch
         {
@@ -329,7 +344,7 @@ void updatemsnGradPsi(const fvMesh& mesh, const volScalarField & Psi, surfaceSca
     }
 }
 
-void updatemGradPsi(const fvMesh& mesh, const volScalarField & Psi, volScalarField & mGradPsi)
+void updatemGradPsi(const volScalarField & Psi, volScalarField & mGradPsi)
 {
     mGradPsi == mag(fvc::grad(Psi));
     forAll(mGradPsi, CellId)
@@ -339,33 +354,13 @@ void updatemGradPsi(const fvMesh& mesh, const volScalarField & Psi, volScalarFie
             mGradPsi[CellId] = scalar(1.0);
         }
     }
-    forAll(mesh.boundary(), patchi)
+    forAll(Psi.mesh().boundary(), patchi)
     {
-        const fvPatch& patch = mesh.boundary()[patchi];
+        const fvPatch& patch = Psi.mesh().boundary()[patchi];
         fvPatchScalarField& gradPsiPatch = mGradPsi.boundaryField()[patchi];
         forAll(patch, faceId)                       // lopp over faces centers belonging to a given patch
         {
             if(gradPsiPatch[faceId] < SMALL_NUMBER3.value())
-            {
-                gradPsiPatch[faceId] = scalar(1.0);
-            }
-        }
-    }
-
-    forAll(mGradPsi, CellId)
-    {
-        if(mGradPsi[CellId] > scalar(1.0))
-        {
-            mGradPsi[CellId] = scalar(1.0);
-        }
-    }
-    forAll(mesh.boundary(), patchi)
-    {
-        const fvPatch& patch = mesh.boundary()[patchi];
-        fvPatchScalarField& gradPsiPatch = mGradPsi.boundaryField()[patchi];
-        forAll(patch, faceId)                       // lopp over faces centers belonging to a given patch
-        {
-            if(gradPsiPatch[faceId] > scalar(1.0))
             {
                 gradPsiPatch[faceId] = scalar(1.0);
             }

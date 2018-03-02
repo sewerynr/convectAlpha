@@ -56,8 +56,8 @@ void exRK3(const volScalarField& C, Time& runTime, const fvMesh& mesh, dimension
 //    LaplaceTW1D = T*(1.0-T)*( fvc::laplacian(Psi) + (1.0/epsH)*( fvc::grad(Psi)&fvc::grad(Psi) )*(1.0-2.0*T) )/epsH;
 //    LaplaceAnalit = - ( Foam::tanh(PsiZero/(2.0*epsH)) - Foam::tanh(PsiZero/(2.0*epsH))*Foam::tanh(PsiZero/(2.0*epsH))*Foam::tanh(PsiZero/(2.0*epsH)) )/(4.0*epsH*epsH);
 
-    updatemsnGradPsi(mesh, Psi, msnGradPsi);
-    updatemGradPsi(mesh, Psi, mGradPsi);
+    updatemsnGradPsi(Psi, msnGradPsi);
+    updatemGradPsi(Psi, mGradPsi);
 
     LimitGradPsi(mesh, Psi, mGradPsi, 1.0/ilePkt, gradPsiLimit, PsiZero);
     LimitsnGradPsi(mesh, Psi, msnGradPsi, 1.0/ilePkt, gradPsiLimit, PsiZero, runTime);
@@ -109,13 +109,13 @@ void exRK3(const volScalarField& C, Time& runTime, const fvMesh& mesh, dimension
 
         k1 == T + fvc::div(phiR)*dtau;
 
-        limitT(k1, mesh);
+        limitT(k1);
 //        AlphaToPsi(k1, Psi, eps, epsH);
 //        AlphaToPsi2(k1, Psi, eps, epsH, mesh);
         AlphaToPsi3(k1, Psi, eps, epsH);
 
-        updatemGradPsi(mesh, Psi, mGradPsi);
-        updatemsnGradPsi(mesh, Psi, msnGradPsi);
+        updatemGradPsi(Psi, mGradPsi);
+        updatemsnGradPsi(Psi, msnGradPsi);
         LimitGradPsi(mesh, Psi, mGradPsi, 1./ilePkt, gradPsiLimit, PsiZero);
         LimitsnGradPsi(mesh, Psi, msnGradPsi, 1.0/ilePkt, gradPsiLimit, PsiZero, runTime);
 
@@ -124,14 +124,13 @@ void exRK3(const volScalarField& C, Time& runTime, const fvMesh& mesh, dimension
 
         k2 == 3.0/4.0* T + 1.0/4.0* k1 + 1.0/4.0* fvc::div(phiR)*dtau;
 
-        limitT(k2, mesh);
+        limitT(k2);
 //        AlphaToPsi(k1, Psi, eps, epsH);
 //        AlphaToPsi2(k1, Psi, eps, epsH, mesh);
         AlphaToPsi3(k2, Psi, eps, epsH);
 
-
-        updatemsnGradPsi(mesh, Psi, msnGradPsi);
-        updatemGradPsi(mesh, Psi, mGradPsi);
+        updatemsnGradPsi(Psi, msnGradPsi);
+        updatemGradPsi(Psi, mGradPsi);
         LimitGradPsi(mesh, Psi, mGradPsi, 1./ilePkt, gradPsiLimit, PsiZero);
         LimitsnGradPsi(mesh, Psi, msnGradPsi, 1.0/ilePkt, gradPsiLimit, PsiZero, runTime);
 
@@ -139,15 +138,15 @@ void exRK3(const volScalarField& C, Time& runTime, const fvMesh& mesh, dimension
         phiR = linearInterpolate( C*k2*( scalar(1.0) - k2 ) * (fvc::grad(Psi) / ( mGradPsi )) ) & mesh.Sf();
         phiR == phiR * ( msnGradPsi - scalar(1.0) );
 
-        T ==  100.0/300.0* Told + 200.0/300.0* k2 + 200.0/300.0*fvc::div(phiR)*dtau;
+        T ==  1.0/3.0* Told + 2.0/3.0* k2 + 2.0/3.0*fvc::div(phiR)*dtau;
 
-        limitT(T, mesh);
+        limitT(T);
 //        AlphaToPsi(k1, Psi, eps, epsH);
 //        AlphaToPsi2(k1, Psi, eps, epsH, mesh);
         AlphaToPsi3(T, Psi, eps, epsH);
 
-        updatemsnGradPsi(mesh, Psi, msnGradPsi);
-        updatemGradPsi(mesh, Psi, mGradPsi);
+        updatemsnGradPsi(Psi, msnGradPsi);
+        updatemGradPsi(Psi, mGradPsi);
         LimitGradPsi(mesh, Psi, mGradPsi, 1./ilePkt, gradPsiLimit, PsiZero);
         LimitsnGradPsi(mesh, Psi, msnGradPsi, 1.0/ilePkt, gradPsiLimit, PsiZero, runTime);
 
@@ -193,11 +192,11 @@ void exRK3(const volScalarField& C, Time& runTime, const fvMesh& mesh, dimension
         }
         f << mesh.cellCentres()[cellI].x()
           << " " << mesh.cellCentres()[cellI].y()
-          << " " << std::setprecision(32) << T[cellI]
-          << " " << std::setprecision(32) << TAnalit[cellI]
-          << " " << std::setprecision(32) << PsiZero[cellI]
-          << " " << std::setprecision(32) << Psi[cellI]
-          << " " << std::setprecision(32) << mGradPsi[cellI]  << std::endl;
+          << " " << std::setprecision(18) << T[cellI]
+          << " " << std::setprecision(18) << TAnalit[cellI]
+          << " " << std::setprecision(18) << PsiZero[cellI]
+          << " " << std::setprecision(18) << Psi[cellI]
+          << " " << std::setprecision(18) << mGradPsi[cellI]  << std::endl;
     }
     forAll(mesh.boundary(), patchi )
     {
@@ -217,18 +216,18 @@ void exRK3(const volScalarField& C, Time& runTime, const fvMesh& mesh, dimension
         {
             fB << patch.Cf()[faceId].x()
                << " " << patch.Cf()[faceId].y()
-               << " " << std::setprecision(32) << TPatch[faceId]
-               << " " << std::setprecision(32) << TAPatch[faceId]
-               << " " << std::setprecision(32) << PZPatch[faceId]
-               << " " << std::setprecision(32) << PPatch[faceId]
-               << " " << std::setprecision(32) << PmGradPsi[faceId]  << std::endl;
+               << " " << std::setprecision(18) << TPatch[faceId]
+               << " " << std::setprecision(18) << TAPatch[faceId]
+               << " " << std::setprecision(18) << PZPatch[faceId]
+               << " " << std::setprecision(18) << PPatch[faceId]
+               << " " << std::setprecision(18) << PmGradPsi[faceId]  << std::endl;
         }
     }
 // !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! AnalizaZbierz save !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     double norm1 = Foam::sum(Foam::mag(TAnalit-T)).value() / T.size();
     double norm2 = Foam::pow(Foam::sum(Foam::pow(TAnalit-T, 2)).value(), 0.5 ) / T.size();
     double norm3 = Foam::max(Foam::mag(TAnalit-T)).value();
-    fAnZbie << ilePktStr << " " <<  std::setprecision(32) << norm1 << " " << norm1 << " " << norm2 << " " << norm2 << " " << norm3 << " " << norm3 << std::endl;
+    fAnZbie << ilePktStr << " " <<  std::setprecision(18) << norm1 << " " << norm1 << " " << norm2 << " " << norm2 << " " << norm3 << " " << norm3 << std::endl;
 
        fAnZbie.close();
        fC.close();

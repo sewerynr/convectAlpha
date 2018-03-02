@@ -336,7 +336,7 @@ void exRK3Face(const volScalarField& C, Time& runTime, const fvMesh& mesh, dimen
 
         volScalarField k1 = createKField("k1", runTime, mesh);
         k1 ==  T + fvc::div(phiR2)*dtau;
-        limitT(k1,mesh);
+        limitT(k1);
         AlphaToPsi(k1, Psi, eps, epsH);
         surfaceScalarField kF1 = createSurfKField("kF1",runTime, mesh);
         PsiAlphaFace(k1, Psi, eps, epsH, runTime, mesh, PsiF, kF1);
@@ -347,7 +347,7 @@ void exRK3Face(const volScalarField& C, Time& runTime, const fvMesh& mesh, dimen
 
         volScalarField k2  = createKField("k2", runTime, mesh);
         k2 == 3./4* T + 1./4* k1 + 1./4* fvc::div(phiR2)*dtau;
-        limitT(k2,mesh);
+        limitT(k2);
         AlphaToPsi(k2, Psi, eps, epsH);
         surfaceScalarField kF2 = createSurfKField("kF2",runTime, mesh);
         PsiAlphaFace(k2, Psi, eps, epsH, runTime, mesh, PsiF, kF2);
@@ -357,7 +357,7 @@ void exRK3Face(const volScalarField& C, Time& runTime, const fvMesh& mesh, dimen
         phiR2 = Cf*kF2*( scalar(1.) - kF2)*(fvc::snGrad(Psi) - scalar(1.))*( linearInterpolate(fvc::grad(Psi)) /( mGradPsiF )) & mesh.Sf();
 
         T ==  1./3* T + 2./3* k2 + 2./3*fvc::div(phiR2)*dtau;
-        limitT(T,mesh);
+        limitT(T);
 
         double norm1c = Foam::sum(Foam::mag(T-Told)).value() / T.size();
         Info << "Norma 1 = " << norm1c << endl;

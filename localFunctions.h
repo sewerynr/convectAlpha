@@ -10,7 +10,7 @@ void InitT(volScalarField& T, const volScalarField& PsiZero, const fvMesh& mesh,
            scalar (*funInitT)(double psi, const dimensionedScalar& epsH, double par, const double x,const double y, const double z), double par
            );
 
-void limitT(volScalarField& T,const fvMesh& mesh);
+void limitT(volScalarField& T);
 
 surfaceScalarField createPhiFieldEx(const Time& runTime, const fvMesh& mesh, const volScalarField& T, const volScalarField& PsiZero, const volScalarField& Psi );
 
@@ -34,9 +34,9 @@ void PsiAlphaFace(const volScalarField& T,const volScalarField& Psi, const doubl
                               surfaceScalarField& PsiF, surfaceScalarField& TF);
 surfaceScalarField createSurfKField(string nazwa, const Time& runTime, const fvMesh& mesh);
 // EXRK#
-void updatemsnGradPsi(const fvMesh& mesh, const volScalarField & Psi, surfaceScalarField & msngradPsi);
+void updatemsnGradPsi(const volScalarField & Psi, surfaceScalarField & msngradPsi);
 
-void updatemGradPsi(const fvMesh& mesh, const volScalarField & Psi, volScalarField & mGradPsi);
+void updatemGradPsi(const volScalarField & Psi, volScalarField & mGradPsi);
 
 void LimitGradPsi(const fvMesh& mesh, const volScalarField & Psi, volScalarField & gradPsi, double dx, const double gradPsiLimit, const volScalarField & PsiZero);
 
