@@ -1,7 +1,7 @@
 #include <stdlib.h>
 #include "localFunctions.h"
 
-dimensionedScalar SMALL_NUMBER3("small", dimless, 1e-15);
+dimensionedScalar SMALL_NUMBER3("small", dimless, SMALL);
 
 void InitPsiXYZ(volScalarField& PsiZero, const fvMesh& mesh, scalar (*funIntP)(const double x,const double y, const double z) )
 {
@@ -243,6 +243,7 @@ void AlphaToPsi3(const volScalarField& T, volScalarField& Psi, const double& eps
          forAll(patch, faceId)                       // lopp over faces centers belonging to a given patch
          {
              if(TPatch[faceId] > SMALL_NUMBER3.value()*small  && TPatch[faceId] < (1.0 - SMALL_NUMBER3.value()*small ) )
+//                 if(TPatch[faceId] > 12  && TPatch[faceId] < (1.0 - 12 ) )
              {
                  PsiPatch[faceId] = epsH.value()*( Foam::log(TPatch[faceId]) - Foam::log(1.0 - TPatch[faceId]));
              }
@@ -309,19 +310,19 @@ void updatemsnGradPsi(const volScalarField & Psi, surfaceScalarField & msngradPs
         }
     }
 
-    forAll(Psi.mesh().boundary(), patchi)
-    {
-        const fvPatch& patch = Psi.mesh().boundary()[patchi];
-        fvsPatchScalarField& gradPsiPatch = msngradPsi.boundaryField()[patchi];
-        forAll(patch, faceId)                       // lopp over faces centers belonging to a given patch
-        {
-            if(gradPsiPatch[faceId] < SMALL_NUMBER3.value())
-            {
-                gradPsiPatch[faceId] = scalar(1.0);
-            }
-        }
-    }
-
+//    forAll(Psi.mesh().boundary(), patchi)
+//    {
+//        const fvPatch& patch = Psi.mesh().boundary()[patchi];
+//        fvsPatchScalarField& gradPsiPatch = msngradPsi.boundaryField()[patchi];
+//        forAll(patch, faceId)                       // lopp over faces centers belonging to a given patch
+//        {
+//            if(gradPsiPatch[faceId] < SMALL_NUMBER3.value())
+//            {
+//                gradPsiPatch[faceId] = scalar(1.0);
+//            }
+//        }
+//    }
+// to pomaga !!!!!!!!!!!!! ?????????????????????? chyba
     forAll(msngradPsi, faceId)
     {
         if(msngradPsi[faceId] > scalar(1.0))
@@ -330,18 +331,18 @@ void updatemsnGradPsi(const volScalarField & Psi, surfaceScalarField & msngradPs
         }
     }
 
-    forAll(Psi.mesh().boundary(), patchi)
-    {
-        const fvPatch& patch = Psi.mesh().boundary()[patchi];
-        fvsPatchScalarField& gradPsiPatch = msngradPsi.boundaryField()[patchi];
-        forAll(patch, faceId)                       // lopp over faces centers belonging to a given patch
-        {
-            if(gradPsiPatch[faceId] > scalar(1.0))
-            {
-                gradPsiPatch[faceId] = scalar(1.0);
-            }
-        }
-    }
+//    forAll(Psi.mesh().boundary(), patchi)
+//    {
+//        const fvPatch& patch = Psi.mesh().boundary()[patchi];
+//        fvsPatchScalarField& gradPsiPatch = msngradPsi.boundaryField()[patchi];
+//        forAll(patch, faceId)                       // lopp over faces centers belonging to a given patch
+//        {
+//            if(gradPsiPatch[faceId] > scalar(1.0))
+//            {
+//                gradPsiPatch[faceId] = scalar(1.0);
+//            }
+//        }
+//    }
 }
 
 void updatemGradPsi(const volScalarField & Psi, volScalarField & mGradPsi)
@@ -366,6 +367,26 @@ void updatemGradPsi(const volScalarField & Psi, volScalarField & mGradPsi)
             }
         }
     }
+
+//    forAll(mGradPsi, CellId)
+//    {
+//        if(mGradPsi[CellId] > scalar(1.0))
+//        {
+//            mGradPsi[CellId] = scalar(1.0);
+//        }
+//    }
+//    forAll(Psi.mesh().boundary(), patchi)
+//    {
+//        const fvPatch& patch = Psi.mesh().boundary()[patchi];
+//        fvPatchScalarField& gradPsiPatch = mGradPsi.boundaryField()[patchi];
+//        forAll(patch, faceId)                       // lopp over faces centers belonging to a given patch
+//        {
+//            if(gradPsiPatch[faceId] > scalar(1.0))
+//            {
+//                gradPsiPatch[faceId] = scalar(1.0);
+//            }
+//        }
+//    }
 }
 
 void LimitGradPsi(const fvMesh& mesh, const volScalarField & Psi, volScalarField & gradPsi, double dx, const double gradPsiLimit, const volScalarField & PsiZero)
@@ -396,24 +417,24 @@ void LimitGradPsi(const fvMesh& mesh, const volScalarField & Psi, volScalarField
 }
 void LimitsnGradPsi(const fvMesh& mesh, const volScalarField & Psi, surfaceScalarField & msngradPsi, double dx, const double gradPsiLimit, const volScalarField & PsiZero, const Time& runTime)
 {
-    surfaceScalarField sPsiZero
-    (
-        IOobject
-        (
-            "sPsiZero",
-            runTime.timeName(),
-            mesh,
-            IOobject::NO_READ,
-            IOobject::NO_WRITE
-        ),
-        linearInterpolate(PsiZero)
-    );
+//    surfaceScalarField sPsiZero
+//    (
+//        IOobject
+//        (
+//            "sPsiZero",
+//            runTime.timeName(),
+//            mesh,
+//            IOobject::NO_READ,
+//            IOobject::NO_WRITE
+//        ),
+//        linearInterpolate(PsiZero)
+//    );
 
     surfaceScalarField sPsi
     (
         IOobject
         (
-            "sPsiZero",
+            "sPsi",
             runTime.timeName(),
             mesh,
             IOobject::NO_READ,
@@ -422,13 +443,12 @@ void LimitsnGradPsi(const fvMesh& mesh, const volScalarField & Psi, surfaceScala
         linearInterpolate(Psi)
     );
 
-    forAll(sPsiZero, faceId)
+    forAll(sPsi, faceId)
     {
         if( mag(sPsi[faceId]) > gradPsiLimit*dx )
         {
             msngradPsi[faceId] = scalar(1.0) ;
         }
-
     }
 
     forAll(mesh.boundary(), patchi)  // mesh.boundary() returns addresses to b.c.
@@ -439,7 +459,6 @@ void LimitsnGradPsi(const fvMesh& mesh, const volScalarField & Psi, surfaceScala
 
         forAll(patch, faceId) // petla po centrach objetosci danego patcha
         {
-//            if ( mag(patch.Cf()[faceId].x()) > gradPsiLimit*dx )
             if ( mag(PsiPatch[faceId]) > gradPsiLimit*dx )
             {
                 msngradPsiPatch[faceId] = scalar(1.0) ;

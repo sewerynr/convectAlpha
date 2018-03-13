@@ -49,9 +49,10 @@ int main(int argc, char *argv[])
     Info << "dtau =  "      << dtau.value() << endl;
     Info << "ilosc Pkt =  " << ilePkt << endl << endl;
 
-    exRK3(C, runTime, mesh, dtau, PsiZero, Psi, T, Told, epsH, eps, limitFieldT, Ntau, gamma, mapFunLog, ilePkt, gradPsiLimit);
+//    exRK3(C, runTime, mesh, dtau, PsiZero, Psi, T, Told, epsH, eps, limitFieldT, Ntau, gamma, mapFunLog, ilePkt, gradPsiLimit);
+//    exEuler(C, runTime, mesh, dtau, PsiZero, Psi, T, Told, epsH, eps, limitFieldT, Ntau, gamma, mapFunLog, ilePkt, gradPsiLimit);
 
-//          exRK3Face(C, runTime, mesh, dtau, PsiZero, Psi, T, Told, epsH, eps, limitFieldT, Ntau, gamma, mapFunLog, ilePkt, gradPsiLimit);
+    exRK3Face(C, runTime, mesh, dtau, PsiZero, Psi, T, Told, epsH, eps, limitFieldT, Ntau, gamma, mapFunLog, ilePkt, gradPsiLimit);
 
     Info<< "End\n" << endl;
     return 0;

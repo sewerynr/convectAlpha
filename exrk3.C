@@ -62,16 +62,17 @@ void exRK3(const volScalarField& C, Time& runTime, const fvMesh& mesh, dimension
     LimitGradPsi(mesh, Psi, mGradPsi, 1.0/ilePkt, gradPsiLimit, PsiZero);
     LimitsnGradPsi(mesh, Psi, msnGradPsi, 1.0/ilePkt, gradPsiLimit, PsiZero, runTime);
 
+
 // !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! SAVE VALUES t = t0 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     forAll(mesh.cellCentres(), cellI )
     {
         f0 << mesh.cellCentres()[cellI].x()
            << " " << mesh.cellCentres()[cellI].y()
-           << " " << std::setprecision(32) << T[cellI]
-           << " " << std::setprecision(32) << TAnalit[cellI]
-           << " " << std::setprecision(32) << PsiZero[cellI]
-           << " " << std::setprecision(32) << Psi[cellI]
-           << " " << std::setprecision(32) << mGradPsi[cellI] << std::endl;
+           << " " << std::setprecision(18) << T[cellI]
+           << " " << std::setprecision(18) << TAnalit[cellI]
+           << " " << std::setprecision(18) << PsiZero[cellI]
+           << " " << std::setprecision(18) << Psi[cellI]
+           << " " << std::setprecision(18) << mGradPsi[cellI] << std::endl;
     }
     forAll(mesh.boundary(), patchi )
     {
@@ -88,11 +89,11 @@ void exRK3(const volScalarField& C, Time& runTime, const fvMesh& mesh, dimension
         {
             fB0 << patch.Cf()[faceId].x()
                 << " " << patch.Cf()[faceId].y()
-                << " " << std::setprecision(32) << TPatch[faceId]
-                << " " << std::setprecision(32) << TAPatch[faceId]
-                << " " << std::setprecision(32) << PZPatch[faceId]
-                << " " << std::setprecision(32) << PPatch[faceId]
-                << " " << std::setprecision(32) << PmGradPsi[faceId]  << std::endl;
+                << " " << std::setprecision(18) << TPatch[faceId]
+                << " " << std::setprecision(18) << TAPatch[faceId]
+                << " " << std::setprecision(18) << PZPatch[faceId]
+                << " " << std::setprecision(18) << PPatch[faceId]
+                << " " << std::setprecision(18) << PmGradPsi[faceId]  << std::endl;
         }
     }
     volScalarField k1 = createKField("k1", runTime, mesh);
@@ -133,7 +134,6 @@ void exRK3(const volScalarField& C, Time& runTime, const fvMesh& mesh, dimension
         updatemGradPsi(Psi, mGradPsi);
         LimitGradPsi(mesh, Psi, mGradPsi, 1./ilePkt, gradPsiLimit, PsiZero);
         LimitsnGradPsi(mesh, Psi, msnGradPsi, 1.0/ilePkt, gradPsiLimit, PsiZero, runTime);
-
 
         phiR = linearInterpolate( C*k2*( scalar(1.0) - k2 ) * (fvc::grad(Psi) / ( mGradPsi )) ) & mesh.Sf();
         phiR == phiR * ( msnGradPsi - scalar(1.0) );
