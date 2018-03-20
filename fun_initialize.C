@@ -3,8 +3,9 @@
 scalar funInitT1(double PsiZero, const dimensionedScalar& epsH, double par, const double x,const double y, const double z )
 {
     scalar ret = 0.0;
+    double zmieniacz = 4.0;
     //ret = 0.5*(scalar(1.) + Foam::tanh( PsiZero/(2.0*epsH.value()) ));
-    ret = 1.0/(1.0+Foam::exp(-PsiZero/epsH.value()));
+    ret = 1.0/(1.0+Foam::exp(-PsiZero/epsH.value()*zmieniacz));
     return ret;
 }
 

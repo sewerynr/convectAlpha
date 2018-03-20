@@ -7,7 +7,7 @@ dimensionedScalar SMALL_NUMBER("small", dimless, SMALL);
 
 void exRK3(const volScalarField& C, Time& runTime, const fvMesh& mesh, dimensionedScalar dtau, const volScalarField& PsiZero, volScalarField& Psi,
                  volScalarField& T, volScalarField& Told, const dimensionedScalar& epsH, const double& eps, const bool& limitFieldT, const int& ilekrcz,
-                 double gamma, const bool& mapFunLog, const double ilePkt, const double gradPsiLimit)
+                 double gamma, const double ilePkt, const double gradPsiLimit)
     {
     scalar one(1.0);
     Info<< "Explicit RK3 !!! "  << endl;

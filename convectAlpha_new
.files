@@ -5,6 +5,7 @@ basicexceptions.h
 convectAlphaS.C
 createFields.H
 createfieldsexrk3.H
+createfieldsexrk3face.h
 exeuler.C
 exeuler.h
 exrk3.C

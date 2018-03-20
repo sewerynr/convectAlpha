@@ -33,8 +33,8 @@ int main(int argc, char *argv[])
     Info << "Ntau= " << Ntau << endl;
     epsH = epsH*Foam::sqrt(pDim);
 
-//  dimensionedScalar dtau( "dTau", explicitSolver ? dimLength : dimLength/dimTime , epsH.value() / pardatu );
-    dimensionedScalar dtau( "dTau", explicitSolver ? dimTime : dimless, epsH.value() / pardTau );
+    dimensionedScalar dtau( "dTau", dimTime, epsH.value() / pardTau );
+    dimensionedScalar dtauI( "dTauI", dimless, epsH.value() / pardTau );
 
 //  InitPsiXYZ(PsiZero, mesh, funInitPsi2); //2D
     InitPsiXYZ(PsiZero, mesh, funInitPsi1); //1D
@@ -49,10 +49,12 @@ int main(int argc, char *argv[])
     Info << "dtau =  "      << dtau.value() << endl;
     Info << "ilosc Pkt =  " << ilePkt << endl << endl;
 
-//    exRK3(C, runTime, mesh, dtau, PsiZero, Psi, T, Told, epsH, eps, limitFieldT, Ntau, gamma, mapFunLog, ilePkt, gradPsiLimit);
+//    exRK3(C, runTime, mesh, dtau, PsiZero, Psi, T, Told, epsH, eps, limitFieldT, Ntau, gamma, ilePkt, gradPsiLimit);
 //    exEuler(C, runTime, mesh, dtau, PsiZero, Psi, T, Told, epsH, eps, limitFieldT, Ntau, gamma, mapFunLog, ilePkt, gradPsiLimit);
 
-    exRK3Face(C, runTime, mesh, dtau, PsiZero, Psi, T, Told, epsH, eps, limitFieldT, Ntau, gamma, mapFunLog, ilePkt, gradPsiLimit);
+//    exRK3Face(C, runTime, mesh, dtau, PsiZero, Psi, T, Told, epsH, eps, limitFieldT, Ntau, gamma, mapFunLog, ilePkt, gradPsiLimit);
+    implicit(C, runTime, mesh, dtauI, PsiZero, Psi, T, Told, epsH, eps, limitFieldT, Ntau, gamma, ilePkt, gradPsiLimit);
+
 
     Info<< "End\n" << endl;
     return 0;

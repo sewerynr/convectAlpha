@@ -86,35 +86,35 @@ volScalarField TAnalit
     mesh,
     dimensionedScalar("TAnalit", dimless, scalar(-100000000.0))
     //0.5*(1.+Foam::tanh(PsiZero/(2.*epsH)))
-    );
+);
 
 volScalarField LaplaceTW1D
+(
+    IOobject
     (
-        IOobject
-        (
-            "LaplaceTW1D",
-            runTime.timeName(),
-            mesh,
-            IOobject::NO_READ,
-            IOobject::AUTO_WRITE
-        ),
+        "LaplaceTW1D",
+        runTime.timeName(),
         mesh,
-        dimensionedScalar("LaplaceTW1D", dimless/(dimLength*dimLength), scalar(-100000000.0))
-     );
+        IOobject::NO_READ,
+        IOobject::AUTO_WRITE
+    ),
+    mesh,
+    dimensionedScalar("LaplaceTW1D", dimless/(dimLength*dimLength), scalar(-100000000.0))
+ );
 
 volScalarField LaplaceAnalit
+(
+    IOobject
     (
-        IOobject
-        (
-            "LaplaceAnalit",
-            runTime.timeName(),
-            mesh,
-            IOobject::NO_READ,
-            IOobject::AUTO_WRITE
-        ),
+        "LaplaceAnalit",
+        runTime.timeName(),
         mesh,
-        dimensionedScalar("LaplaceAnalit", dimless/(dimLength*dimLength), scalar(-100000000.0))
-     );
+        IOobject::NO_READ,
+        IOobject::AUTO_WRITE
+    ),
+    mesh,
+    dimensionedScalar("LaplaceAnalit", dimless/(dimLength*dimLength), scalar(-100000000.0))
+ );
 
 surfaceScalarField surfgradT
 (   // nie grad interp lin na scianki tego co w nawiasie

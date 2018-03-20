@@ -5,8 +5,8 @@
 scalar one(1.);  // stwórz obiekt klasy skalar o nazwie one zainicjalizowany 1
 dimensionedScalar SMALL_NUMBER("small", dimless, SMALL);   //  aby nie dzielić przez zero zdefiniowana wartość "small" z przechowywana informacja o wymiarze i warosci SMALL (zdefiniowana w OF)
 
-bool explicitSolver = runTime.controlDict().lookupOrDefault("explicit", true);
-bool mapFunLog      = runTime.controlDict().lookupOrDefault("mapFunLog", true);
+//bool explicitSolver = runTime.controlDict().lookupOrDefault("explicit", true);
+//bool mapFunLog      = runTime.controlDict().lookupOrDefault("mapFunLog", true);
 bool limitFieldT    = runTime.controlDict().lookupOrDefault("limitFieldT", false);
 
 double gamma = runTime.controlDict().lookupOrDefault("gamma", 1e-6);

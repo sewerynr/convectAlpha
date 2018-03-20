@@ -59,7 +59,6 @@ void exRK3Face(const volScalarField& C, Time& runTime, const fvMesh& mesh, dimen
               volScalarField& T, volScalarField& Told, const dimensionedScalar& epsH, const double& eps, const bool& limitFieldT, const int& ilekrcz, double gamma,
               const bool& mapFunLog, const double ilePkt, const double gradPsiLimit)
     {
-    std::fstream f;
     string nazwa, sciezka, metcalk;
     metcalk = "exRK3";
     std::ostringstream strs;
@@ -71,10 +70,19 @@ void exRK3Face(const volScalarField& C, Time& runTime, const fvMesh& mesh, dimen
     std::string ilePktStr = strs2.str();
 
     sciezka = "/home/sr/foam/sr-4.0/run/convectAlphaSTest2D_fe40";
+
+    // !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! OPEN FILES !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    std::fstream f, fB, f0, fB0, fC, fAnZbie;
     try
     {
-    f.open("wynik.vtk", std::ios::out);
-    if( f.good())
+    fC.open("./convergence.vtk", std::fstream::in | std::fstream::out | std::fstream::trunc);
+    f.open("./gradAlpha.vtk" , std::fstream::in | std::fstream::out | std::fstream::trunc);
+    fB.open("./gradAlphaB.vtk" , std::fstream::in | std::fstream::out | std::fstream::trunc);
+    f0.open("./gradAlpha0.vtk" , std::fstream::in | std::fstream::out | std::fstream::trunc);
+    fB0.open("./gradAlphaB0.vtk" , std::fstream::in | std::fstream::out | std::fstream::trunc);
+    fAnZbie.open("./AnalizaZbierz.vtk", std::fstream::in | std::fstream::out | std::fstream::app);
+
+    if( f.good() && fB.good() && f0.good() && fB0.good() && fC.good() && fAnZbie.good())
         Info << "plik otwarty" << endl;
     else
         throw FileException();
@@ -85,272 +93,92 @@ void exRK3Face(const volScalarField& C, Time& runTime, const fvMesh& mesh, dimen
     Info<< "Explicit RK3Face !!! "  << endl;
     scalar one(1);
 
+
+    // !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! CREATE FIELDS !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    #include "createfieldsexrk3face.h"
+
+    volScalarField k1 = createKField("k1", runTime, mesh);
+    surfaceScalarField kF1 = createSurfKField("kF1",runTime, mesh);
+
+    volScalarField k2  = createKField("k2", runTime, mesh);
+    surfaceScalarField kF2 = createSurfKField("kF2",runTime, mesh);
+
+
+    // !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! OPEN FILES END !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
     Psi == PsiZero;
 
-    surfaceScalarField phiR2
-    (
-        IOobject
-        (
-            "phiR2",
-            runTime.timeName(),
-            mesh,
-            IOobject::NO_READ,
-            IOobject::AUTO_WRITE
-        ),
-        mesh,
-        dimensionedScalar("phiR2", (dimLength*dimLength*dimLength)/dimTime, scalar(1.))
-    );
+    magGradT = mag(fvc::grad(T));
+//    msnGradPsi == mag(fvc::snGrad(Psi));
+//    mGradPsi = mag(fvc::grad(Psi));
+//    surfgradT = linearInterpolate( T*(1.0-T)*(fvc::grad(Psi))/epsH ) & mesh.Sf();
 
-    volScalarField mGradPsi
-    (
-        IOobject
-        (
-            "gradPsi",
-            runTime.timeName(),
-            mesh,
-            IOobject::NO_READ,
-            IOobject::NO_WRITE
-        ),
-        mag(fvc::grad(Psi))
-    );
+//    GradTW = T*(1.0-T)*mag(fvc::grad(Psi))/epsH;
+    gradTanalit = mag( ( one - Foam::tanh(PsiZero/(2.0*epsH))*Foam::tanh(PsiZero/(2.0*epsH)) )*(1.0/(4.0*epsH)) );
+//    LaplaceTStraignt = fvc::laplacian(T);
+    TAnalit = 1.0/(1.0+Foam::exp(-PsiZero/epsH));
+//    LaplaceTW1D = T*(1.0-T)*( fvc::laplacian(Psi) + (1.0/epsH)*( fvc::grad(Psi)&fvc::grad(Psi) )*(1.0-2.0*T) )/epsH;
+//    LaplaceAnalit = - ( Foam::tanh(PsiZero/(2.0*epsH)) - Foam::tanh(PsiZero/(2.0*epsH))*Foam::tanh(PsiZero/(2.0*epsH))*Foam::tanh(PsiZero/(2.0*epsH)) )/(4.0*epsH*epsH);
 
-    volScalarField gradTanalit
-    (
-        IOobject
-        (
-            "gradTanalit",
-            runTime.timeName(),
-            mesh,
-            IOobject::NO_READ,
-            IOobject::AUTO_WRITE
-        ),
-        mag( ( one - Foam::tanh(PsiZero/(2*epsH))*Foam::tanh(PsiZero/(2*epsH)) )*(1/(4*epsH)) )
-    );
 
-    volScalarField magGradT
-    (
-        IOobject
-        (
-            "magGradT",
-            runTime.timeName(),
-            mesh,
-            IOobject::NO_READ,
-            IOobject::AUTO_WRITE
-        ),
-        mag(fvc::grad(T))
-    );
+    // !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! SAVE VALUES t = t0 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+        forAll(mesh.cellCentres(), cellI )
+        {
+            f0 << mesh.cellCentres()[cellI].x()
+               << " " << mesh.cellCentres()[cellI].y()
+               << " " << std::setprecision(18) << T[cellI]
+               << " " << std::setprecision(18) << TAnalit[cellI]
+               << " " << std::setprecision(18) << PsiZero[cellI]
+               << " " << std::setprecision(18) << Psi[cellI]
+               << " " << std::setprecision(18) << mGradPsi[cellI] << std::endl;
+        }
+        forAll(mesh.boundary(), patchi )
+        {
+            const fvPatch& patch = mesh.boundary()[patchi];
+            if( patch.type() == "empty" )
+            { continue; }
+            fvPatchScalarField& TPatch = T.boundaryField()[patchi];
+            fvPatchScalarField& TAPatch = TAnalit.boundaryField()[patchi];
+            const fvPatchScalarField& PZPatch = PsiZero.boundaryField()[patchi];
+            fvPatchScalarField& PPatch = Psi.boundaryField()[patchi];
+            fvPatchScalarField& PmGradPsi = mGradPsi.boundaryField()[patchi];
 
-    volVectorField GradT
-    (
-        IOobject
-        (
-            "GradT",
-            runTime.timeName(),
-            mesh,
-            IOobject::NO_READ,
-            IOobject::NO_WRITE
-        ),
-        T*(1-T)*(fvc::grad(Psi))/epsH
-    );
+            forAll(patch, faceId)                       // lopp over faces centers belonging to a given patch
+            {
+                fB0 << patch.Cf()[faceId].x()
+                    << " " << patch.Cf()[faceId].y()
+                    << " " << std::setprecision(18) << TPatch[faceId]
+                    << " " << std::setprecision(18) << TAPatch[faceId]
+                    << " " << std::setprecision(18) << PZPatch[faceId]
+                    << " " << std::setprecision(18) << PPatch[faceId]
+                    << " " << std::setprecision(18) << PmGradPsi[faceId]  << std::endl;
+            }
+        }
 
-    volScalarField sGradT
-    (
-        IOobject
-        (
-            "sGradT",
-            runTime.timeName(),
-            mesh,
-            IOobject::NO_READ,
-            IOobject::AUTO_WRITE
-        ),
-        mag(fvc::grad(Psi))/epsH
-    );
-
-    volScalarField LaplaceT
-    (
-        IOobject
-        (
-            "LaplaceT",
-            runTime.timeName(),
-            mesh,
-            IOobject::NO_READ,
-            IOobject::AUTO_WRITE
-        ),
-        T*(1-T)*(fvc::laplacian(Psi))/epsH
-    );
-
-    volScalarField LaplaceTStraight
-    (
-        IOobject
-        (
-            "LaplaceTStraight",
-            runTime.timeName(),
-            mesh,
-            IOobject::NO_READ,
-            IOobject::AUTO_WRITE
-        ),
-        fvc::laplacian(T)
-    );
-
-    volScalarField TAnalit
-    (
-        IOobject
-        (
-            "TAnalit",
-            runTime.timeName(),
-            mesh,
-            IOobject::NO_READ,
-            IOobject::AUTO_WRITE
-        ),
-        0.5*(1.+Foam::tanh(PsiZero/(2.*epsH)))
-    );
-    volScalarField TStartowe
-    (
-        IOobject
-        (
-            "TStartowe",
-            runTime.timeName(),
-            mesh,
-            IOobject::NO_READ,
-            IOobject::NO_WRITE
-        ),
-        T
-    );
-
-    volScalarField LaplaceTW1D
-    (
-        IOobject
-        (
-            "LaplaceTW1D",
-            runTime.timeName(),
-            mesh,
-            IOobject::NO_READ,
-            IOobject::AUTO_WRITE
-        ),
-        T*(1.-T)*( fvc::laplacian(Psi) + (1./epsH)*( fvc::grad(Psi)&fvc::grad(Psi) )*(1.-2.*T) )/epsH
-     );
-
-    volScalarField LaplaceAnalit
-    (
-        IOobject
-        (
-            "LaplaceAnalit",
-            runTime.timeName(),
-            mesh,
-            IOobject::NO_READ,
-            IOobject::AUTO_WRITE
-        ),
-            - ( Foam::tanh(PsiZero/(2.0*epsH)) - Foam::tanh(PsiZero/(2.0*epsH))*Foam::tanh(PsiZero/(2.0*epsH))*Foam::tanh(PsiZero/(2.0*epsH)) )/(4*epsH*epsH)
-     );
-
-    surfaceScalarField surfgradT
-    (
-        IOobject
-        (
-            "surfgradT",
-            runTime.timeName(),
-            mesh,
-            IOobject::NO_READ,
-            IOobject::AUTO_WRITE
-        ),
-       linearInterpolate( T*(1-T)*(fvc::grad(Psi))/epsH ) & mesh.Sf()
-    );
-
-    volVectorField GradTW
-    (
-        IOobject
-        (
-            "GradTW",
-            runTime.timeName(),
-            mesh,
-            IOobject::NO_READ,
-            IOobject::AUTO_WRITE
-        ),
-        T*(1.-T)*(fvc::grad(Psi))/epsH
-    );
-
-    //!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!   NEW   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-    surfaceScalarField PsiF
-    (
-        IOobject
-        (
-            "PsiF",
-            runTime.timeName(),
-            mesh,
-            IOobject::NO_READ,
-            IOobject::NO_WRITE
-        ),
-        mesh,
-        dimensionedScalar("PsiF", dimLength, scalar(0))
-    );
-
-    surfaceScalarField TF
-    (
-        IOobject
-        (
-            "TF",
-            runTime.timeName(),
-            mesh,
-            IOobject::NO_READ,
-            IOobject::NO_WRITE
-        ),
-        mesh,
-        dimensionedScalar("TF", dimless, scalar(0))
-    );
-
-    surfaceScalarField Cf
-    (
-        IOobject
-        (
-            "Cf",
-            runTime.timeName(),
-            mesh,
-            IOobject::NO_READ,
-            IOobject::NO_WRITE
-        ),
-        mesh,
-        dimensionedScalar("Cf", dimLength/dimTime, scalar(1.))
-    );
-
-    surfaceScalarField mGradPsiF
-    (
-        IOobject
-        (
-            "mGradPsiF",
-            runTime.timeName(),
-            mesh,
-            IOobject::NO_READ,
-            IOobject::NO_WRITE
-        ),
-        fvc::snGrad(Psi)
-    );
-
+    // !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! reinitialization !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     for(int i = 0; i <= ilekrcz; ++i)
     {
         Told == T;
 
+        limitT(T);
         AlphaToPsi(T, Psi, eps, epsH);
         PsiAlphaFace(T, Psi, eps, epsH, runTime, mesh, PsiF, TF);
         updateGradPsiF(mesh,Psi,mGradPsiF);
         LimitGradPsiF(mesh, PsiF, mGradPsiF, 1./ilePkt, gradPsiLimit);
         phiR2 = Cf*TF*( scalar(1.) - TF)*(mGradPsiF - scalar(1.))*( linearInterpolate(fvc::grad(Psi)) /( mGradPsiF )) & mesh.Sf();
 
-        volScalarField k1 = createKField("k1", runTime, mesh);
         k1 ==  T + fvc::div(phiR2)*dtau;
         limitT(k1);
-        AlphaToPsi(k1, Psi, eps, epsH);
-        surfaceScalarField kF1 = createSurfKField("kF1",runTime, mesh);
+        AlphaToPsi3(k1, Psi, eps, epsH);
         PsiAlphaFace(k1, Psi, eps, epsH, runTime, mesh, PsiF, kF1);
         updateGradPsiF(mesh,Psi,mGradPsiF);
         LimitGradPsiF(mesh, PsiF, mGradPsiF, 1./ilePkt, gradPsiLimit);
 
         phiR2 = Cf*kF1*( scalar(1.) - kF1)*(mGradPsiF - scalar(1.))*( linearInterpolate(fvc::grad(Psi)) /( mGradPsiF )) & mesh.Sf();
 
-        volScalarField k2  = createKField("k2", runTime, mesh);
         k2 == 3./4* T + 1./4* k1 + 1./4* fvc::div(phiR2)*dtau;
         limitT(k2);
         AlphaToPsi(k2, Psi, eps, epsH);
-        surfaceScalarField kF2 = createSurfKField("kF2",runTime, mesh);
         PsiAlphaFace(k2, Psi, eps, epsH, runTime, mesh, PsiF, kF2);
         updateGradPsiF(mesh,Psi,mGradPsiF);
         LimitGradPsiF(mesh, PsiF, mGradPsiF, 1./ilePkt, gradPsiLimit);
@@ -358,7 +186,7 @@ void exRK3Face(const volScalarField& C, Time& runTime, const fvMesh& mesh, dimen
         phiR2 = Cf*kF2*( scalar(1.) - kF2)*(fvc::snGrad(Psi) - scalar(1.))*( linearInterpolate(fvc::grad(Psi)) /( mGradPsiF )) & mesh.Sf();
 
         T ==  1./3* T + 2./3* k2 + 2./3*fvc::div(phiR2)*dtau;
-        limitT(T);
+
 
         double norm1c = Foam::sum(Foam::mag(T-Told)).value() / T.size();
         Info << "Norma 1 = " << norm1c << endl;
@@ -368,77 +196,63 @@ void exRK3Face(const volScalarField& C, Time& runTime, const fvMesh& mesh, dimen
             sGradT[cellI] = GradT[cellI].x();
 //            Info << GradT[cellI].x() << GradT[cellI].y() << endl;
         }
-//        surfgradT = linearInterpolate( T*(1-T)*(fvc::grad(Psi))/epsH ) & mesh.Sf();
-//        GradT = T*(1-T)*mag(fvc::grad(Psi))/epsH;
+    }
+    double dx = 1.0/ilePkt;
+    double norm1_grad_pkt = 0.0;
+    double norm1_grad_pkt_1TW = 0.0;
 
-//        LaplaceT = fvc::div(surfgradT);
-//        LaplaceTStraight = fvc::laplacian(T);
+// !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! SAVE VALUES t = tk !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    forAll(mesh.cellCentres(), cellI )
+    {
+        if ( (mesh.cellCentres()[cellI].y() > 0.0) && (mesh.cellCentres()[cellI].y() < dx) )
+        {
+//            f << mesh.cellCentres()[cellI].x() << " "<< T[cellI] << " " << TAnalit[cellI] << " "  << gradTanalit[cellI] << " " << magGradT[cellI] << " " << GradTW[cellI] << " " << LaplaceAnalit[cellI] << " " << LaplaceTW1D[cellI] << " " << LaplaceTStraignt[cellI] << " " << norm1_grad_pkt_1TW << " " << norm1_grad_pkt << std::endl;
+//            f << mesh.cellCentres()[cellI].x() << " " << std::setprecision(32) << T[cellI] << " " << TAnalit[cellI] << " " << PsiZero[cellI] << std::endl;
+        }
+        f << mesh.cellCentres()[cellI].x()
+          << " " << mesh.cellCentres()[cellI].y()
+          << " " << std::setprecision(18) << T[cellI]
+          << " " << std::setprecision(18) << TAnalit[cellI]
+          << " " << std::setprecision(18) << PsiZero[cellI]
+          << " " << std::setprecision(18) << Psi[cellI]
+          << " " << std::setprecision(18) << mGradPsi[cellI]  << std::endl;
+    }
+    forAll(mesh.boundary(), patchi )
+    {
+        const fvPatch& patch = mesh.boundary()[patchi];
 
-//        magGradT = mag(fvc::grad(T));
-//        GradTW = T*(1.-T)*gradPsi/epsH;
-//        LaplaceTStraight = fvc::laplacian(T);
-//        LaplaceTW1D = T*(1.-T)*( fvc::laplacian(Psi) + (1./epsH)*( fvc::grad(Psi)&fvc::grad(Psi) )*(1.-2.*T) )/epsH;
-//        gradTanalit =  mag( ( one - Foam::tanh(PsiZero/(2.*epsH))*Foam::tanh(PsiZero/(2.*epsH)) )*(1./(4.*epsH)) );
+        if( patch.type() == "empty" )
+        {
+            continue;
+        }
+        fvPatchScalarField& TPatch = T.boundaryField()[patchi];
+        fvPatchScalarField& TAPatch = TAnalit.boundaryField()[patchi];
+        const fvPatchScalarField& PZPatch = PsiZero.boundaryField()[patchi];
+        fvPatchScalarField& PPatch = Psi.boundaryField()[patchi];
+        fvPatchScalarField& PmGradPsi = mGradPsi.boundaryField()[patchi];
 
-//        double norm1 = Foam::sum(Foam::mag(TAnalit-T)).value() / T.size();
-//        double norm2 = Foam::pow(Foam::sum(Foam::pow(TAnalit-T, 2)).value(), 0.5 ) / T.size();
-//        double norm3 = Foam::max(Foam::mag(TAnalit-T)).value();
-//        Info << "Norma 1 analit = " << norm1 << endl;
-//        double norm1gr = Foam::sum(Foam::mag(gradTanalit-GradTW)).value() / T.size();
-//        double norm2gr = Foam::pow(Foam::sum(Foam::pow((gradTanalit-GradTW), 2)).value(), 0.5 ) / T.size();
-//        double norm3gr = Foam::max(Foam::mag(gradTanalit-GradTW)).value();
-
-//        double norm1lap = Foam::sum(Foam::mag(LaplaceAnalit-LaplaceTW1D)).value() / T.size();
-//        double norm2lap = Foam::pow(Foam::sum(Foam::pow((LaplaceAnalit-LaplaceTW1D), 2)).value(), 0.5 ) / T.size();
-//        double norm3lap = Foam::max(Foam::mag(LaplaceAnalit-LaplaceTW1D)).value();
-
-//        f << i << " " << norm1 << " " << norm2 << " " << norm3 << " " << norm1gr << " " << norm2gr << " " << norm3gr << " " << norm1lap <<  " " << norm2lap << " " << norm3lap << " " << norm1c <<std::endl;
-
-//        runTime.write();
-//        ++runTime;
+        forAll(patch, faceId)                       // lopp over faces centers belonging to a given patch
+        {
+            fB << patch.Cf()[faceId].x()
+               << " " << patch.Cf()[faceId].y()
+               << " " << std::setprecision(18) << TPatch[faceId]
+               << " " << std::setprecision(18) << TAPatch[faceId]
+               << " " << std::setprecision(18) << PZPatch[faceId]
+               << " " << std::setprecision(18) << PPatch[faceId]
+               << " " << std::setprecision(18) << PmGradPsi[faceId]  << std::endl;
+        }
     }
 
+// !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! AnalizaZbierz save !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    double norm1 = Foam::sum(Foam::mag(TAnalit-T)).value() / T.size();
+    double norm2 = Foam::pow(Foam::sum(Foam::pow(TAnalit-T, 2)).value(), 0.5 ) / T.size();
+    double norm3 = Foam::max(Foam::mag(TAnalit-T)).value();
+    fAnZbie << ilePktStr << " " <<  std::setprecision(18) << norm1 << " " << norm1 << " " << norm2 << " " << norm2 << " " << norm3 << " " << norm3 << std::endl;
+
+    fAnZbie.close();
+    fC.close();
     f.close();
-
-//    try
-//    {
-//    f.open(sciezka + "gradAlpha_" + metcalk + "_eps_" + wielkosceps + "_" + ilePktStr + ".vtk" , std::ios::out);
-//    if( f.good())
-//        Info << "plik otwarty" << endl;
-//    else
-//        throw FileException();
-//    }
-//    catch(BasicException& ex)
-//    { Info << ex.wyjatek << endl; }
-
-//    double dx = 1./ilePkt;
-//    double norm1_grad_pkt = 0.;
-//    double norm1_grad_pkt_1TW = 0.;
-//    forAll(mesh.cellCentres(), cellI )
-//    {
-//        if ( (mesh.cellCentres()[cellI].y() > 0) && (mesh.cellCentres()[cellI].y() < dx) )
-//        {
-//            norm1_grad_pkt_1TW = Foam::mag( gradTanalit[cellI] - GradTW[cellI] ) / ( Foam::mag( gradTanalit[cellI] ) + eps );
-//            norm1_grad_pkt = Foam::mag( gradTanalit[cellI] - magGradT[cellI] ) / ( Foam::mag( gradTanalit[cellI] ) + eps );
-//            f << mesh.cellCentres()[cellI].x() << " "<< T[cellI] << " " << TAnalit[cellI] << " "  << gradTanalit[cellI] << " " << magGradT[cellI] << " " <<GradTW[cellI] << " " << LaplaceAnalit[cellI] << " " << LaplaceTW1D[cellI] << " " << LaplaceTStraight[cellI] << " " << TStartowe[cellI] << " " << norm1_grad_pkt_1TW << " " << norm1_grad_pkt << std::endl;
-//        }
-//    }
-//    f.close();
-
-//   std::ofstream newFile(sciezka + "AnalizaZbierz.vtk", std::ios_base::app);
-
-//       if(newFile.is_open())
-//       {
-//           double norm1 = Foam::sum(Foam::mag(TAnalit-T)).value() / T.size();
-//           double norm2 = Foam::pow(Foam::sum(Foam::pow(TAnalit-T, 2)).value(), 0.5 ) / T.size();
-//           double norm3 = Foam::max(Foam::mag(TAnalit-T)).value();
-
-//           newFile << ilePktStr << " " << norm1 << " " << norm1 << " " << norm2 << " " << norm2 << " " << norm3 << " " << norm3 << std::endl;
-//       }
-//       else
-//       {
-//           Info << "wszyscy zginiemy!!! " << endl;
-//       }
-//       newFile.close();
-
+    fB.close();
+    f0.close();
+    fB0.close();
 }

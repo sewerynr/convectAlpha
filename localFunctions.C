@@ -259,7 +259,7 @@ void AlphaToPsi(const volScalarField& T, volScalarField& Psi, const double& eps,
 {
 //    if(abs(Psi) < 26*epsH)
 
-    Psi == epsH*Foam::log((T + SMALL_NUMBER3)/(1.0 - T + SMALL_NUMBER3));
+    Psi == epsH*Foam::log((T + SMALL_NUMBER3/10000.)/(1.0 - T + SMALL_NUMBER3/10000.));
 
 //     maxPsi = max(Psi,maxPsi);
 //     minPsi = min(Psi,minPsi);
